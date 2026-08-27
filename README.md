@@ -207,7 +207,7 @@ The relational database is defined with Drizzle ORM in `src/db/schema.ts`:
 ### 1. Clone and Install
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Sehaan-1/engineering-talent-placement-platform.git
 cd engineering-talent-placement-platform
 npm install
 ```
