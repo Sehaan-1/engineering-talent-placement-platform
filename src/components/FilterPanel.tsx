@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import {
-  REGION_FLAG,
+  REGION_CODE,
   REGION_LABEL,
   SENIORITY_LABEL,
   AVAILABILITY_LABEL,
   getSkillColor,
+  harmonizeColor,
 } from "@/lib/format";
 import {
-  IconFilter,
+  IconSliders,
   IconSearch,
   IconClose,
   IconUsers,
@@ -27,7 +28,7 @@ export type SkillDefinitionOption = {
 
 export type FilterValues = {
   q: string;
-  skills: string[]; // slugs
+  skills: string[];
   seniority: string[];
   region: string[];
   rateMin: number | "";
@@ -54,6 +55,19 @@ export default function FilterPanel({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [skillSearch, setSkillSearch] = useState("");
+  const [scrollEdges, setScrollEdges] = useState<{ top: boolean; bottom: boolean }>({
+    top: false,
+    bottom: availableSkills.length > 18,
+  });
+
+  function updateScrollEdges(el: HTMLDivElement | null) {
+    if (!el) return;
+    const top = el.scrollTop > 2;
+    const bottom = el.scrollHeight - el.scrollTop - el.clientHeight > 2;
+    setScrollEdges((prev) =>
+      prev.top === top && prev.bottom === bottom ? prev : { top, bottom }
+    );
+  }
 
   const activeFilterCount =
     (values.skills.length > 0 ? 1 : 0) +
@@ -89,87 +103,70 @@ export default function FilterPanel({
     onChange({ ...values, region: next });
   }
 
-  const filteredSkillOptions = availableSkills.filter((s) =>
-    s.name.toLowerCase().includes(skillSearch.toLowerCase()) ||
-    s.categoryName.toLowerCase().includes(skillSearch.toLowerCase())
+  const filteredSkillOptions = availableSkills.filter(
+    (s) =>
+      s.name.toLowerCase().includes(skillSearch.toLowerCase()) ||
+      s.categoryName.toLowerCase().includes(skillSearch.toLowerCase())
   );
 
   return (
     <div
       className="card"
       style={{
-        marginBottom: 20,
         borderRadius: 14,
-        border: "1px solid var(--pebble-deep)",
-        background: "#ffffff",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+        border: "1px solid var(--pebble-line)",
+        background: "var(--surface)",
         overflow: "hidden",
       }}
     >
-      {/* Top Search and Quick Actions Bar */}
+      {/* Search and quick filters */}
       <div
         style={{
-          padding: "12px 16px",
+          padding: "12px 14px",
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          gap: 10,
           flexWrap: "wrap",
         }}
       >
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            background: "var(--pebble-tint)",
-            border: "1px solid var(--pebble-deep)",
-            borderRadius: 10,
-            padding: "0 12px",
-            minWidth: 260,
-            flex: 1,
-          }}
+          className="search-field"
+          style={{ minWidth: "min(240px, 100%)" }}
         >
           <IconSearch size={15} className="text-muted" />
           <input
-            placeholder="Search candidate name, headline, bio, location, tags..."
+            placeholder="Search by name, headline, location, or tag…"
             value={values.q}
             onChange={(e) => onChange({ ...values, q: e.target.value })}
-            style={{
-              border: "none",
-              outline: "none",
-              font: "inherit",
-              fontSize: 13,
-              padding: "9px 0",
-              background: "transparent",
-              flex: 1,
-              color: "var(--ink)",
-            }}
           />
           {values.q ? (
             <button
               type="button"
               onClick={() => onChange({ ...values, q: "" })}
+              aria-label="Clear search query"
               style={{
                 border: "none",
                 background: "transparent",
                 cursor: "pointer",
                 padding: 4,
+                display: "inline-flex",
+                alignItems: "center",
                 color: "var(--ink-muted)",
               }}
             >
-              <IconClose size={12} />
+              <IconClose size={13} />
             </button>
           ) : null}
         </div>
 
-        {/* Quick Filters */}
         <select
-          className="input sm"
+          className="input"
+          aria-label="Filter by verification status"
           value={values.verification}
           onChange={(e) => onChange({ ...values, verification: e.target.value })}
-          style={{ width: 140, height: 38 }}
+          style={{ minWidth: 152 }}
         >
-          <option value="">Any verification</option>
+          <option value="">All verification</option>
           {VERIFICATIONS.map((v) => (
             <option key={v} value={v}>
               {v === "unverified"
@@ -182,12 +179,13 @@ export default function FilterPanel({
         </select>
 
         <select
-          className="input sm"
+          className="input"
+          aria-label="Filter by availability"
           value={values.availability}
           onChange={(e) => onChange({ ...values, availability: e.target.value })}
-          style={{ width: 140, height: 38 }}
+          style={{ minWidth: 150 }}
         >
-          <option value="">Any availability</option>
+          <option value="">All availability</option>
           {AVAILABILITIES.map((a) => (
             <option key={a} value={a}>
               {AVAILABILITY_LABEL[a]}
@@ -197,25 +195,29 @@ export default function FilterPanel({
 
         <button
           type="button"
-          className={`btn sm ${expanded ? "primary" : "ghost"}`}
-          onClick={() => setExpanded(!expanded)}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+          className={`btn ${expanded ? "primary" : ""}`}
+          aria-expanded={expanded}
+          onClick={() => setExpanded((prev) => !prev)}
         >
-          <IconFilter size={13} />
-          <span>Advanced filters</span>
+          <IconSliders size={14} />
+          <span>Filters</span>
           {activeFilterCount > 0 ? (
             <span
               style={{
-                background: expanded ? "rgba(255,255,255,0.25)" : "var(--sangria)",
-                color: "#fff",
-                borderRadius: "50%",
-                width: 18,
+                background: expanded
+                  ? "rgba(255, 255, 255, 0.22)"
+                  : "var(--sangria-tint)",
+                color: expanded ? "#fff" : "var(--sangria)",
+                borderRadius: 999,
+                minWidth: 18,
                 height: 18,
+                padding: "0 5px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 10,
-                fontWeight: 700,
+                fontSize: 11,
+                fontWeight: 600,
+                fontVariantNumeric: "tabular-nums",
               }}
             >
               {activeFilterCount}
@@ -228,19 +230,19 @@ export default function FilterPanel({
             type="button"
             className="btn ghost sm"
             onClick={onReset}
-            style={{ color: "var(--crimson)", display: "inline-flex", alignItems: "center", gap: 4 }}
+            style={{ color: "var(--ruby)" }}
           >
-            <IconClose size={12} />
-            Clear all
+            <IconClose size={13} />
+            <span>Reset</span>
           </button>
         ) : null}
       </div>
 
-      {/* Selected Skill Chips Pill Strip */}
+      {/* Selected skill chips */}
       {values.skills.length > 0 ? (
         <div
           style={{
-            padding: "8px 16px",
+            padding: "8px 14px",
             background: "var(--pebble-light)",
             borderTop: "1px solid var(--border)",
             display: "flex",
@@ -251,48 +253,31 @@ export default function FilterPanel({
           }}
         >
           <span style={{ fontWeight: 600, color: "var(--ink-soft)" }}>
-            Active skill filters ({values.skills.length}):
+            Skills ({values.skills.length}):
           </span>
           {values.skills.map((slug) => {
             const def = availableSkills.find((s) => s.slug === slug);
             const label = def?.name ?? slug;
-            const color = def?.categoryColor ?? getSkillColor(slug);
+            const color = getSkillColor(slug, def?.categoryColor);
             return (
-              <span
-                key={slug}
-                className="chip"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  background: "#fff",
-                  border: `1px solid ${color}40`,
-                  padding: "3px 8px",
-                  borderRadius: 8,
-                  fontSize: 11,
-                  fontWeight: 600,
-                }}
-              >
-                <span
-                  className="dot"
-                  style={{ background: color, width: 8, height: 8 }}
-                />
-                {label}
+              <span key={slug} className="chip">
+                <span className="swatch" style={{ background: color }} />
+                <span>{label}</span>
                 <button
                   type="button"
                   onClick={() => toggleSkill(slug)}
+                  aria-label={`Remove ${label} filter`}
                   style={{
                     border: "none",
                     background: "transparent",
                     cursor: "pointer",
-                    padding: 0,
-                    marginLeft: 2,
-                    display: "flex",
+                    padding: 2,
+                    display: "inline-flex",
                     alignItems: "center",
                     color: "var(--ink-muted)",
                   }}
                 >
-                  <IconClose size={10} />
+                  <IconClose size={11} />
                 </button>
               </span>
             );
@@ -304,7 +289,8 @@ export default function FilterPanel({
               border: "none",
               background: "transparent",
               cursor: "pointer",
-              fontSize: 11,
+              fontSize: 12,
+              fontWeight: 500,
               color: "var(--ink-muted)",
               textDecoration: "underline",
             }}
@@ -314,282 +300,304 @@ export default function FilterPanel({
         </div>
       ) : null}
 
-      {/* Expanded Multi-criteria Drawer */}
-      {expanded ? (
-        <div
-          style={{
-            padding: "16px 20px",
-            borderTop: "1px solid var(--border)",
-            background: "linear-gradient(to bottom, #ffffff, var(--pebble-light))",
-            display: "grid",
-            gap: 16,
-          }}
-        >
-          {/* Seniority & Regions */}
-          <div className="grid cols-2">
+      {/* Coordinated collapsible multi-criteria drawer */}
+      <div
+        className="collapse-shell"
+        data-open={expanded ? "true" : "false"}
+        aria-hidden={!expanded}
+      >
+        <div className="collapse-inner">
+          <div
+            style={{
+              padding: "16px 18px",
+              borderTop: "1px solid var(--border)",
+              background: "var(--pebble-tint)",
+              display: "grid",
+              gap: 16,
+            }}
+          >
+            <div className="grid cols-2">
+              <div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--ink-soft)",
+                    marginBottom: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <IconUsers size={14} className="text-muted" />
+                  <span>Seniority level</span>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {SENIORITIES.map((s) => {
+                    const active = values.seniority.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        tabIndex={expanded ? 0 : -1}
+                        onClick={() => toggleSeniority(s)}
+                        className="btn sm"
+                        style={
+                          active
+                            ? {
+                                borderColor: "var(--sangria)",
+                                background: "var(--sangria-tint)",
+                                color: "var(--sangria)",
+                              }
+                            : undefined
+                        }
+                      >
+                        {SENIORITY_LABEL[s]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--ink-soft)",
+                    marginBottom: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <IconClock size={14} className="text-muted" />
+                  <span>Region &amp; overlap</span>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {REGIONS.map((r) => {
+                    const active = values.region.includes(r);
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        tabIndex={expanded ? 0 : -1}
+                        onClick={() => toggleRegion(r)}
+                        className="btn sm"
+                        style={
+                          active
+                            ? {
+                                borderColor: "var(--jade)",
+                                background: "var(--jade-tint)",
+                                color: "var(--jade-deep)",
+                              }
+                            : undefined
+                        }
+                      >
+                        <span style={{ color: "var(--ink-muted)", fontWeight: 500 }}>
+                          {REGION_CODE[r]}
+                        </span>
+                        <span>{REGION_LABEL[r]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
             <div>
-              <label
+              <div
                 style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  color: "var(--ink-muted)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "var(--ink-soft)",
                   marginBottom: 8,
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
                 }}
               >
-                <IconUsers size={13} /> Seniority Level
-              </label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {SENIORITIES.map((s) => {
-                  const active = values.seniority.includes(s);
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => toggleSeniority(s)}
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: 8,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        border: active
-                          ? "1px solid var(--sangria)"
-                          : "1px solid var(--pebble-deep)",
-                        background: active ? "var(--sangria-tint)" : "#fff",
-                        color: active ? "var(--sangria)" : "var(--ink)",
-                        cursor: "pointer",
-                        transition: "all 0.15s ease",
-                      }}
-                    >
-                      {SENIORITY_LABEL[s]}
-                    </button>
-                  );
-                })}
+                <IconDollar size={14} className="text-muted" />
+                <span>Hourly rate range (USD/hr)</span>
               </div>
-            </div>
-
-            <div>
-              <label
+              <div
                 style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  color: "var(--ink-muted)",
-                  marginBottom: 8,
                   display: "flex",
                   alignItems: "center",
-                  gap: 6,
+                  gap: 10,
+                  maxWidth: 360,
+                  flexWrap: "wrap",
                 }}
               >
-                <IconClock size={13} /> Region / Overlap
-              </label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {REGIONS.map((r) => {
-                  const active = values.region.includes(r);
-                  return (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => toggleRegion(r)}
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: 8,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        border: active
-                          ? "1px solid var(--jade)"
-                          : "1px solid var(--pebble-deep)",
-                        background: active ? "var(--jade-tint)" : "#fff",
-                        color: active ? "var(--jade)" : "var(--ink)",
-                        cursor: "pointer",
-                        transition: "all 0.15s ease",
-                      }}
-                    >
-                      {REGION_FLAG[r]} {REGION_LABEL[r]}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Rate Range */}
-          <div>
-            <label
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                color: "var(--ink-muted)",
-                marginBottom: 8,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <IconDollar size={13} /> Hourly Rate Range (USD/hr)
-            </label>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, maxWidth: 360 }}>
-              <div style={{ position: "relative", flex: 1 }}>
-                <span
-                  style={{
-                    position: "absolute",
-                    left: 10,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "var(--ink-muted)",
-                    fontSize: 13,
-                  }}
-                >
-                  $
-                </span>
-                <input
-                  type="number"
-                  placeholder="Min (e.g. 50)"
-                  min={0}
-                  className="input"
-                  style={{ paddingLeft: 24 }}
-                  value={values.rateMin}
-                  onChange={(e) =>
-                    onChange({
-                      ...values,
-                      rateMin: e.target.value === "" ? "" : Number(e.target.value),
-                    })
-                  }
-                />
-              </div>
-              <span style={{ color: "var(--ink-muted)" }}>to</span>
-              <div style={{ position: "relative", flex: 1 }}>
-                <span
-                  style={{
-                    position: "absolute",
-                    left: 10,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "var(--ink-muted)",
-                    fontSize: 13,
-                  }}
-                >
-                  $
-                </span>
-                <input
-                  type="number"
-                  placeholder="Max (e.g. 180)"
-                  min={0}
-                  className="input"
-                  style={{ paddingLeft: 24 }}
-                  value={values.rateMax}
-                  onChange={(e) =>
-                    onChange({
-                      ...values,
-                      rateMax: e.target.value === "" ? "" : Number(e.target.value),
-                    })
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Skill Tag Multi-Select Library */}
-          <div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-            >
-              <label
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  color: "var(--ink-muted)",
-                  margin: 0,
-                }}
-              >
-                Filter by Skills ({availableSkills.length} available)
-              </label>
-              <input
-                placeholder="Filter skill list..."
-                value={skillSearch}
-                onChange={(e) => setSkillSearch(e.target.value)}
-                style={{
-                  padding: "4px 8px",
-                  fontSize: 11,
-                  borderRadius: 6,
-                  border: "1px solid var(--border)",
-                  outline: "none",
-                  width: 160,
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 6,
-                maxHeight: 140,
-                overflowY: "auto",
-                padding: "8px",
-                background: "#fff",
-                borderRadius: 10,
-                border: "1px solid var(--border)",
-              }}
-            >
-              {filteredSkillOptions.map((s) => {
-                const active = values.skills.includes(s.slug);
-                return (
-                  <button
-                    key={s.slug}
-                    type="button"
-                    onClick={() => toggleSkill(s.slug)}
+                <div style={{ position: "relative", flex: "1 1 120px" }}>
+                  <span
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "4px 10px",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      fontWeight: 500,
-                      border: active
-                        ? `1px solid ${s.categoryColor}`
-                        : "1px solid var(--pebble-deep)",
-                      background: active ? `${s.categoryColor}15` : "#fff",
-                      color: active ? s.categoryColor : "var(--ink)",
-                      cursor: "pointer",
+                      position: "absolute",
+                      left: 10,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "var(--ink-muted)",
+                      fontSize: 13,
+                      pointerEvents: "none",
                     }}
                   >
-                    <span
-                      className="dot"
-                      style={{
-                        background: s.categoryColor,
-                        width: 7,
-                        height: 7,
-                      }}
-                    />
-                    <span>{s.name}</span>
-                  </button>
-                );
-              })}
-              {filteredSkillOptions.length === 0 ? (
-                <div style={{ fontSize: 12, color: "var(--ink-muted)", padding: "6px" }}>
-                  No skills matching &quot;{skillSearch}&quot;
+                    $
+                  </span>
+                  <input
+                    type="number"
+                    placeholder="Min (50)"
+                    min={0}
+                    tabIndex={expanded ? 0 : -1}
+                    className="input"
+                    style={{ paddingLeft: 24, width: "100%" }}
+                    value={values.rateMin}
+                    onChange={(e) =>
+                      onChange({
+                        ...values,
+                        rateMin:
+                          e.target.value === "" ? "" : Number(e.target.value),
+                      })
+                    }
+                  />
                 </div>
-              ) : null}
+                <span style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>
+                  to
+                </span>
+                <div style={{ position: "relative", flex: "1 1 120px" }}>
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: 10,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "var(--ink-muted)",
+                      fontSize: 13,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    $
+                  </span>
+                  <input
+                    type="number"
+                    placeholder="Max (180)"
+                    min={0}
+                    tabIndex={expanded ? 0 : -1}
+                    className="input"
+                    style={{ paddingLeft: 24, width: "100%" }}
+                    value={values.rateMax}
+                    onChange={(e) =>
+                      onChange({
+                        ...values,
+                        rateMax:
+                          e.target.value === "" ? "" : Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  marginBottom: 8,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--ink-soft)",
+                  }}
+                >
+                  Skills ({availableSkills.length} tracked)
+                </span>
+                <input
+                  placeholder="Find skill…"
+                  tabIndex={expanded ? 0 : -1}
+                  value={skillSearch}
+                  onChange={(e) => setSkillSearch(e.target.value)}
+                  className="input sm"
+                  style={{ width: 170 }}
+                />
+              </div>
+
+              <div
+                style={{
+                  background: "var(--surface)",
+                  borderRadius: 10,
+                  border: "1px solid var(--border)",
+                  padding: "2px 0",
+                }}
+              >
+                <div
+                  className="scroll-fade-y"
+                  data-more-top={scrollEdges.top ? "true" : undefined}
+                  data-more-bottom={
+                    scrollEdges.bottom && filteredSkillOptions.length > 14
+                      ? "true"
+                      : undefined
+                  }
+                  onScroll={(e) => updateScrollEdges(e.currentTarget)}
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    maxHeight: 152,
+                    overflowY: "auto",
+                    padding: "8px 10px",
+                  }}
+                >
+                {filteredSkillOptions.map((s) => {
+                  const active = values.skills.includes(s.slug);
+                  const swatch = harmonizeColor(s.categoryColor, s.slug);
+                  return (
+                    <button
+                      key={s.slug}
+                      type="button"
+                      tabIndex={expanded ? 0 : -1}
+                      onClick={() => toggleSkill(s.slug)}
+                      className="btn sm"
+                      style={
+                        active
+                          ? {
+                              borderColor: swatch,
+                              background: "var(--pebble-light)",
+                              color: "var(--ink)",
+                            }
+                          : undefined
+                      }
+                    >
+                      <span
+                        className="dot"
+                        style={{ background: swatch, width: 6, height: 6 }}
+                      />
+                      <span>{s.name}</span>
+                    </button>
+                  );
+                })}
+                {filteredSkillOptions.length === 0 ? (
+                  <div
+                    style={{
+                      fontSize: 12.5,
+                      color: "var(--ink-muted)",
+                      padding: 6,
+                    }}
+                  >
+                    No skills matching &ldquo;{skillSearch}&rdquo;
+                  </div>
+                ) : null}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }

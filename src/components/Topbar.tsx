@@ -1,17 +1,18 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { TOGGLE_SIDEBAR_EVENT } from "./Sidebar";
 import {
   IconSearch,
-  IconBolt,
+  IconPlus,
   IconBell,
-  IconCheck,
-  IconSparkle,
+  IconFileText,
   IconInterview,
   IconClock,
   IconPipeline,
   IconUsers,
+  IconMenu,
 } from "./Icon";
 
 const TITLES: Record<string, { title: string; crumb: string }> = {
@@ -22,8 +23,8 @@ const TITLES: Record<string, { title: string; crumb: string }> = {
   "/interviews": { title: "Interviews", crumb: "Workspace / Interviews" },
   "/skills": { title: "Skill matrix", crumb: "Workspace / Skills" },
   "/clients": { title: "Clients", crumb: "Workspace / Clients" },
-  "/settings/team": { title: "Team Management", crumb: "Workspace / Settings / Team" },
-  "/settings/audit": { title: "Audit Log & Compliance", crumb: "Workspace / Settings / Audit" },
+  "/settings/team": { title: "Team", crumb: "Workspace / Settings / Team" },
+  "/settings/audit": { title: "Audit log", crumb: "Workspace / Settings / Audit" },
   "/settings": { title: "Settings", crumb: "Workspace / Settings" },
 };
 
@@ -38,7 +39,9 @@ interface AppNotification {
 }
 
 function timeAgo(dateString: string): string {
-  const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
+  const seconds = Math.floor(
+    (Date.now() - new Date(dateString).getTime()) / 1000
+  );
   if (seconds < 60) return "Just now";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
@@ -51,29 +54,40 @@ function timeAgo(dateString: string): string {
 function getNotificationIcon(type: string) {
   switch (type) {
     case "interview_scheduled":
-      return <IconInterview size={14} style={{ color: "#3b82f6" }} />;
+      return <IconInterview size={14} style={{ color: "var(--slate)" }} />;
     case "status_changed":
-      return <IconPipeline size={14} style={{ color: "#10b981" }} />;
+      return <IconPipeline size={14} style={{ color: "var(--jade-deep)" }} />;
     case "availability_changed":
-      return <IconClock size={14} style={{ color: "#f59e0b" }} />;
+      return <IconClock size={14} style={{ color: "var(--amber)" }} />;
     case "candidate_invited":
-      return <IconUsers size={14} style={{ color: "#8b5cf6" }} />;
+      return <IconUsers size={14} style={{ color: "var(--sangria)" }} />;
     case "resume_parsed":
-      return <IconSparkle size={14} style={{ color: "#9333ea" }} />;
+      return <IconFileText size={14} style={{ color: "var(--jade-deep)" }} />;
     default:
-      return <IconBell size={14} style={{ color: "#6366f1" }} />;
+      return <IconBell size={14} style={{ color: "var(--ink-soft)" }} />;
   }
 }
+
+const POPOVER_EXIT_MS = 130;
 
 export default function Topbar({ orgName }: { orgName?: string } = {}) {
   const pathname = usePathname();
   const router = useRouter();
-  const [q, setQ] = useState("");
+  const [searchState, setSearchState] = useState<{
+    scope: string;
+    value: string;
+  }>({ scope: pathname ?? "", value: "" });
 
-  // Notification state
+  const inCandidates = pathname?.startsWith("/candidates") ?? false;
+  const q =
+    inCandidates || searchState.scope === (pathname ?? "")
+      ? searchState.value
+      : "";
+
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownRendered, setDropdownRendered] = useState(false);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -91,11 +105,17 @@ export default function Topbar({ orgName }: { orgName?: string } = {}) {
       : matchedMeta.crumb,
   };
 
-  useEffect(() => {
-    if (!pathname?.startsWith("/candidates")) setQ("");
-  }, [pathname]);
+  const closeDropdown = useCallback(() => {
+    setDropdownOpen(false);
+  }, []);
 
-  // Initial notification count & SSE listener
+  useEffect(() => {
+    if (dropdownOpen || !dropdownRendered) return;
+    const t = window.setTimeout(() => setDropdownRendered(false), POPOVER_EXIT_MS);
+    return () => window.clearTimeout(t);
+  }, [dropdownOpen, dropdownRendered]);
+
+  // Initial notification count & live SSE listener
   useEffect(() => {
     let eventSource: EventSource | null = null;
 
@@ -107,14 +127,13 @@ export default function Topbar({ orgName }: { orgName?: string } = {}) {
           setUnreadCount(data.unreadCount || 0);
           setNotifications(data.notifications || []);
         }
-      } catch (err) {
-        // Ignore background polling errors
+      } catch {
+        // Ignore transient polling failures
       }
     }
 
     fetchInitialNotifications();
 
-    // Subscribe to SSE stream for live updates
     try {
       eventSource = new EventSource("/api/notifications/stream");
       eventSource.onmessage = (event) => {
@@ -127,11 +146,11 @@ export default function Topbar({ orgName }: { orgName?: string } = {}) {
             setNotifications(parsed.recent);
           }
         } catch {
-          // ignore
+          // Ignore malformed keepalive events
         }
       };
     } catch {
-      // SSE not supported or network error
+      // SSE unavailable
     }
 
     return () => {
@@ -139,35 +158,45 @@ export default function Topbar({ orgName }: { orgName?: string } = {}) {
     };
   }, []);
 
-  // Close dropdown on outside click
+  // Close dropdown on outside pointerdown or Escape
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
+    if (!dropdownOpen) return;
+    function handleOutside(e: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        closeDropdown();
       }
     }
-    if (dropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") closeDropdown();
     }
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("keydown", handleKey);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleKey);
     };
-  }, [dropdownOpen]);
+  }, [dropdownOpen, closeDropdown]);
 
-  async function handleOpenDropdown() {
-    setDropdownOpen((prev) => !prev);
-    if (!dropdownOpen) {
-      setLoadingNotifs(true);
-      try {
-        const res = await fetch("/api/notifications");
-        if (res.ok) {
-          const data = await res.json();
-          setNotifications(data.notifications || []);
-          setUnreadCount(data.unreadCount || 0);
-        }
-      } finally {
-        setLoadingNotifs(false);
+  async function handleToggleDropdown() {
+    if (dropdownOpen) {
+      closeDropdown();
+      return;
+    }
+    setDropdownRendered(true);
+    setDropdownOpen(true);
+    setLoadingNotifs(true);
+    try {
+      const res = await fetch("/api/notifications");
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unreadCount || 0);
       }
+    } finally {
+      setLoadingNotifs(false);
     }
   }
 
@@ -178,20 +207,22 @@ export default function Topbar({ orgName }: { orgName?: string } = {}) {
         setUnreadCount(0);
         setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // Ignore network error
     }
   }
 
   async function handleClickNotification(notif: AppNotification) {
     if (!notif.read) {
-      fetch(`/api/notifications/${notif.id}`, { method: "PATCH" }).catch(() => {});
+      fetch(`/api/notifications/${notif.id}`, { method: "PATCH" }).catch(
+        () => {}
+      );
       setUnreadCount((c) => Math.max(0, c - 1));
       setNotifications((prev) =>
         prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n))
       );
     }
-    setDropdownOpen(false);
+    closeDropdown();
     if (notif.href) {
       router.push(notif.href);
     }
@@ -201,58 +232,91 @@ export default function Topbar({ orgName }: { orgName?: string } = {}) {
     e.preventDefault();
     const params = new URLSearchParams();
     if (q.trim()) params.set("q", q.trim());
-    router.push(`/candidates${params.toString() ? `?${params.toString()}` : ""}`);
+    router.push(
+      `/candidates${params.toString() ? `?${params.toString()}` : ""}`
+    );
+  }
+
+  function openMobileMenu() {
+    window.dispatchEvent(new CustomEvent(TOGGLE_SIDEBAR_EVENT));
   }
 
   return (
-    <div className="topbar">
-      <div style={{ display: "flex", flexDirection: "column" }}>
+    <header className="topbar">
+      <button
+        type="button"
+        className="mobile-menu-btn"
+        onClick={openMobileMenu}
+        aria-label="Open navigation menu"
+      >
+        <IconMenu size={18} />
+      </button>
+
+      <div className="topbar-heading">
         <div className="crumb">{meta.crumb}</div>
         <div className="title">{meta.title}</div>
       </div>
-      <form className="search" onSubmit={submitSearch}>
+
+      <form className="search" onSubmit={submitSearch} role="search">
         <IconSearch size={15} />
         <input
-          placeholder="Search candidates, skills, clients…"
+          aria-label="Search candidates or skills"
+          placeholder="Search candidates or skills…"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) =>
+            setSearchState({ scope: pathname ?? "", value: e.target.value })
+          }
         />
-        <kbd>⏎</kbd>
+        <kbd aria-hidden="true">Enter</kbd>
       </form>
 
-      {/* Notification Bell & Dropdown */}
-      <div style={{ position: "relative" }} ref={dropdownRef}>
+      <button
+        type="button"
+        className="btn topbar-mobile-search"
+        style={{ padding: "8px 10px" }}
+        aria-label="Search candidates"
+        onClick={() => router.push("/candidates")}
+      >
+        <IconSearch size={16} />
+      </button>
+
+      {/* Notification bell & popover */}
+      <div style={{ position: "relative", flexShrink: 0 }} ref={dropdownRef}>
         <button
+          type="button"
           className="btn"
-          onClick={handleOpenDropdown}
+          onClick={handleToggleDropdown}
+          aria-expanded={dropdownOpen}
+          aria-haspopup="dialog"
+          aria-label="Notifications"
+          title="Notifications"
           style={{
             position: "relative",
             padding: "8px 10px",
             background: dropdownOpen ? "var(--pebble-soft)" : undefined,
           }}
-          title="Notifications"
-          aria-label="Notifications"
         >
           <IconBell size={16} />
           {unreadCount > 0 && (
             <span
               style={{
                 position: "absolute",
-                top: -3,
-                right: -3,
-                minWidth: 16,
-                height: 16,
+                top: -4,
+                right: -4,
+                minWidth: 17,
+                height: 17,
                 padding: "0 4px",
-                borderRadius: 8,
-                background: "var(--sangria, #ef4444)",
+                borderRadius: 999,
+                background: "var(--sangria)",
                 color: "#ffffff",
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 700,
+                fontVariantNumeric: "tabular-nums",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 lineHeight: 1,
-                boxShadow: "0 0 0 2px var(--surface, #ffffff)",
+                boxShadow: "0 0 0 2px var(--surface)",
               }}
             >
               {unreadCount > 9 ? "9+" : unreadCount}
@@ -260,50 +324,30 @@ export default function Topbar({ orgName }: { orgName?: string } = {}) {
           )}
         </button>
 
-        {dropdownOpen && (
+        {dropdownRendered && (
           <div
-            style={{
-              position: "absolute",
-              top: "calc(100% + 8px)",
-              right: 0,
-              width: 360,
-              maxHeight: 440,
-              background: "var(--surface, #ffffff)",
-              border: "1px solid var(--pebble-line, #e2e8f0)",
-              borderRadius: 12,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
-              zIndex: 1000,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
+            className="notif-popover"
+            data-closing={!dropdownOpen ? "true" : undefined}
+            role="dialog"
+            aria-label="Notifications"
           >
-            {/* Dropdown Header */}
             <div
               style={{
                 padding: "12px 16px",
-                borderBottom: "1px solid var(--pebble-line, #e2e8f0)",
+                borderBottom: "1px solid var(--pebble-line)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                background: "var(--pebble-soft, #f8fafc)",
+                gap: 8,
+                background: "var(--pebble-tint)",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <strong style={{ fontSize: 13, color: "var(--ink)" }}>Notifications</strong>
+                <strong style={{ fontSize: 13.5, color: "var(--ink)" }}>
+                  Notifications
+                </strong>
                 {unreadCount > 0 && (
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      background: "rgba(99, 102, 241, 0.12)",
-                      color: "#6366f1",
-                      padding: "1px 6px",
-                      borderRadius: 10,
-                    }}
-                  >
-                    {unreadCount} new
-                  </span>
+                  <span className="badge brand sm">{unreadCount} new</span>
                 )}
               </div>
               {unreadCount > 0 && (
@@ -313,82 +357,130 @@ export default function Topbar({ orgName }: { orgName?: string } = {}) {
                   style={{
                     background: "none",
                     border: "none",
-                    fontSize: 11,
-                    color: "#6366f1",
+                    fontSize: 12,
+                    color: "var(--sangria)",
                     fontWeight: 600,
                     cursor: "pointer",
-                    padding: 0,
+                    padding: "2px 4px",
                   }}
                 >
-                  Mark all as read
+                  Mark all read
                 </button>
               )}
             </div>
 
-            {/* Notifications List */}
             <div style={{ overflowY: "auto", maxHeight: 360 }}>
               {loadingNotifs ? (
-                <div style={{ padding: 24, textAlign: "center", color: "var(--ink-muted)", fontSize: 12 }}>
+                <div
+                  style={{
+                    padding: 24,
+                    textAlign: "center",
+                    color: "var(--ink-muted)",
+                    fontSize: 13,
+                  }}
+                >
                   Loading notifications…
                 </div>
               ) : notifications.length === 0 ? (
-                <div style={{ padding: 32, textAlign: "center", color: "var(--ink-muted)", fontSize: 13 }}>
-                  <IconBell size={24} style={{ margin: "0 auto 8px", opacity: 0.4 }} />
-                  <p style={{ margin: 0 }}>You&apos;re all caught up!</p>
-                  <span style={{ fontSize: 11 }}>New alerts will appear here in real time.</span>
+                <div
+                  style={{
+                    padding: "32px 20px",
+                    textAlign: "center",
+                    color: "var(--ink-muted)",
+                    fontSize: 13,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: "var(--pebble-soft)",
+                      color: "var(--ink-muted)",
+                      display: "grid",
+                      placeItems: "center",
+                      margin: "0 auto 10px",
+                    }}
+                  >
+                    <IconBell size={18} />
+                  </div>
+                  <p
+                    style={{
+                      margin: "0 0 3px",
+                      fontWeight: 600,
+                      color: "var(--ink)",
+                    }}
+                  >
+                    All caught up
+                  </p>
+                  <span style={{ fontSize: 12 }}>
+                    Placement and interview updates appear here live.
+                  </span>
                 </div>
               ) : (
                 notifications.map((notif) => (
-                  <div
+                  <button
                     key={notif.id}
+                    type="button"
                     onClick={() => handleClickNotification(notif)}
                     style={{
+                      width: "100%",
+                      textAlign: "left",
+                      fontFamily: "inherit",
                       padding: "12px 16px",
-                      borderBottom: "1px solid var(--pebble-line, #f1f5f9)",
-                      background: notif.read ? "transparent" : "rgba(99, 102, 241, 0.04)",
+                      border: "none",
+                      borderBottom: "1px solid var(--pebble-soft)",
+                      background: notif.read
+                        ? "transparent"
+                        : "var(--sangria-tint)",
                       cursor: "pointer",
                       display: "flex",
                       gap: 10,
                       alignItems: "flex-start",
-                      transition: "background 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "var(--pebble-soft, #f8fafc)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = notif.read
-                        ? "transparent"
-                        : "rgba(99, 102, 241, 0.04)";
+                      transition: "background 0.14s var(--ease-fade)",
                     }}
                   >
                     <div
                       style={{
-                        width: 26,
-                        height: 26,
-                        borderRadius: 6,
-                        background: "var(--surface, #ffffff)",
-                        border: "1px solid var(--pebble-line, #e2e8f0)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        width: 28,
+                        height: 28,
+                        borderRadius: 7,
+                        background: "var(--surface)",
+                        border: "1px solid var(--pebble-line)",
+                        display: "grid",
+                        placeItems: "center",
                         flexShrink: 0,
-                        marginTop: 2,
+                        marginTop: 1,
                       }}
                     >
                       {getNotificationIcon(notif.type)}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 8,
+                        }}
+                      >
                         <strong
                           style={{
-                            fontSize: 12,
+                            fontSize: 13,
                             color: "var(--ink)",
-                            fontWeight: notif.read ? 600 : 700,
+                            fontWeight: notif.read ? 500 : 600,
                           }}
                         >
                           {notif.title}
                         </strong>
-                        <span style={{ fontSize: 10, color: "var(--ink-muted)", flexShrink: 0 }}>
+                        <span
+                          style={{
+                            fontSize: 11.5,
+                            color: "var(--ink-muted)",
+                            flexShrink: 0,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
                           {timeAgo(notif.createdAt)}
                         </span>
                       </div>
@@ -412,13 +504,14 @@ export default function Topbar({ orgName }: { orgName?: string } = {}) {
                           width: 6,
                           height: 6,
                           borderRadius: "50%",
-                          background: "#6366f1",
-                          marginTop: 6,
+                          background: "var(--sangria)",
+                          marginTop: 7,
                           flexShrink: 0,
                         }}
+                        aria-hidden="true"
                       />
                     )}
-                  </div>
+                  </button>
                 ))
               )}
             </div>
@@ -427,14 +520,15 @@ export default function Topbar({ orgName }: { orgName?: string } = {}) {
       </div>
 
       <button
+        type="button"
         className="btn"
-        style={{ marginLeft: 4 }}
-        title="Quick add candidate"
+        title="Add candidate"
+        aria-label="Add candidate"
         onClick={() => router.push("/candidates?new=1")}
       >
-        <IconBolt size={14} />
-        <span>Quick add</span>
+        <IconPlus size={15} />
+        <span className="topbar-quick-label">Add candidate</span>
       </button>
-    </div>
+    </header>
   );
 }

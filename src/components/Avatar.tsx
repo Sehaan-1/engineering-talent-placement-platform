@@ -1,6 +1,6 @@
 "use client";
 
-import { initials } from "@/lib/format";
+import { harmonizeColor, initials } from "@/lib/format";
 
 export default function Avatar({
   name,
@@ -22,7 +22,11 @@ export default function Avatar({
             ? "avatar xxl"
             : "avatar";
   return (
-    <div className={cls} style={{ background: color }}>
+    <div
+      className={cls}
+      style={{ background: harmonizeColor(color, name) }}
+      aria-hidden="true"
+    >
       {initials(name)}
     </div>
   );

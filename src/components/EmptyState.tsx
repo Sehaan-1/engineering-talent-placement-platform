@@ -1,17 +1,20 @@
+import type { ReactNode } from "react";
+import { IconSearch } from "./Icon";
+
 export default function EmptyState({
-  icon = "✦",
+  icon,
   title,
   description,
   action,
 }: {
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   title: string;
   description: string;
-  action?: React.ReactNode;
+  action?: ReactNode;
 }) {
   return (
     <div className="empty">
-      <div className="icon">{icon}</div>
+      <div className="icon">{icon ?? <IconSearch size={22} />}</div>
       <h3>{title}</h3>
       <p>{description}</p>
       {action}

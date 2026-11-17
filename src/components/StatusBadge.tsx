@@ -1,13 +1,9 @@
 import {
-  MILESTONE_COLOR,
   MILESTONE_LABEL,
   STATUS_LABEL,
   AVAILABILITY_LABEL,
-  AVAILABILITY_COLOR,
   INTERVIEW_OUTCOME_LABEL,
-  INTERVIEW_OUTCOME_COLOR,
   SENIORITY_LABEL,
-  SENIORITY_COLOR,
 } from "@/lib/format";
 
 type Kind =
@@ -16,6 +12,49 @@ type Kind =
   | "availability"
   | "interview"
   | "seniority";
+
+function toneFor(kind: Kind, value: string): string {
+  if (kind === "verification") {
+    if (value === "verified") return "success";
+    if (value === "pending") return "warning";
+    if (value === "rejected") return "danger";
+    return "muted";
+  }
+  if (kind === "availability") {
+    if (value === "available") return "success";
+    if (value === "limited") return "warning";
+    if (value === "booked") return "info";
+    return "muted";
+  }
+  if (kind === "interview") {
+    if (value === "passed") return "success";
+    if (value === "scheduled") return "info";
+    if (value === "rescheduled") return "warning";
+    if (value === "failed" || value === "no-show") return "danger";
+    return "muted";
+  }
+  if (kind === "seniority") {
+    if (value === "principal") return "brand";
+    if (value === "staff") return "warning";
+    if (value === "senior") return "success";
+    if (value === "mid") return "info";
+    return "muted";
+  }
+  // milestone
+  if (value === "placed" || value === "offer") return "success";
+  if (value === "interviewing") return "warning";
+  if (value === "submitted") return "brand";
+  if (value === "screening") return "info";
+  return "muted";
+}
+
+function labelFor(kind: Kind, value: string): string {
+  if (kind === "milestone") return MILESTONE_LABEL[value] ?? value;
+  if (kind === "verification") return STATUS_LABEL[value] ?? value;
+  if (kind === "availability") return AVAILABILITY_LABEL[value] ?? value;
+  if (kind === "interview") return INTERVIEW_OUTCOME_LABEL[value] ?? value;
+  return SENIORITY_LABEL[value] ?? value;
+}
 
 export default function StatusBadge({
   kind,
@@ -26,66 +65,14 @@ export default function StatusBadge({
   value: string;
   size?: "sm" | "md";
 }) {
-  let label = value;
-  let color = "#6b6562";
-  let bg = "var(--pebble-soft)";
-  let cls = "badge";
-
-  if (kind === "milestone") {
-    label = MILESTONE_LABEL[value] ?? value;
-    color = MILESTONE_COLOR[value] ?? color;
-    bg = `${color}1f`;
-  } else if (kind === "verification") {
-    label = STATUS_LABEL[value] ?? value;
-    if (value === "verified") {
-      cls = "badge success";
-    } else if (value === "pending") {
-      cls = "badge warning";
-    } else if (value === "rejected") {
-      cls = "badge danger";
-    } else {
-      cls = "badge muted";
-    }
-    return (
-      <span className={cls}>
-        <span className="dot" /> {label}
-      </span>
-    );
-  } else if (kind === "availability") {
-    label = AVAILABILITY_LABEL[value] ?? value;
-    color = AVAILABILITY_COLOR[value] ?? color;
-    bg = `${color}1f`;
-  } else if (kind === "interview") {
-    label = INTERVIEW_OUTCOME_LABEL[value] ?? value;
-    color = INTERVIEW_OUTCOME_COLOR[value] ?? color;
-    bg = `${color}1f`;
-  } else if (kind === "seniority") {
-    label = SENIORITY_LABEL[value] ?? value;
-    color = SENIORITY_COLOR[value] ?? color;
-    bg = `${color}1f`;
-  }
-
-  if (size === "sm") {
-    return (
-      <span
-        className={cls}
-        style={{
-          background: bg,
-          color,
-          padding: "2px 8px",
-          fontSize: 10,
-        }}
-      >
-        <span className="dot" />
-        {label}
-      </span>
-    );
-  }
+  const tone = toneFor(kind, value);
+  const label = labelFor(kind, value);
+  const cls = `badge ${tone}${size === "sm" ? " sm" : ""}`;
 
   return (
-    <span className={cls} style={{ background: bg, color }}>
+    <span className={cls}>
       <span className="dot" />
-      {label}
+      <span>{label}</span>
     </span>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { FRAMEWORKS, PROFICIENCY_LABEL, getSkillColor } from "@/lib/format";
 
 export type SkillChipProps = {
@@ -38,22 +39,15 @@ export default function FrameworkChip({
     getSkillColor(skillSlug, skill?.categoryColor);
 
   const cls = proficiency ? `skill-tag ${proficiency}` : "chip";
-
-  const style: React.CSSProperties =
-    size === "sm" ? { padding: "3px 8px", fontSize: 10 } : {};
+  const style: CSSProperties | undefined =
+    size === "sm" ? { padding: "3px 8px", fontSize: 11.5 } : undefined;
 
   return (
     <span className={cls} style={style}>
       <span className="swatch" style={{ background: color }} />
-      {label}
+      <span>{label}</span>
       {proficiency ? (
-        <span
-          style={{
-            opacity: 0.75,
-            fontWeight: 500,
-            fontSize: size === "sm" ? 9 : 10,
-          }}
-        >
+        <span className="skill-level">
           · {PROFICIENCY_LABEL[proficiency] ?? proficiency}
         </span>
       ) : null}
@@ -62,4 +56,3 @@ export default function FrameworkChip({
 }
 
 export { FrameworkChip as SkillChip };
-

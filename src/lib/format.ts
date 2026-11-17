@@ -1,4 +1,4 @@
-// Lightweight, tree-shakable formatting helpers.
+// Lightweight, tree-shakable formatting helpers and Hireloop brand color maps.
 
 export function initials(name: string): string {
   const parts = name
@@ -48,10 +48,13 @@ export function formatDateTime(d: Date | string | null | undefined): string {
   });
 }
 
-export function formatRelative(d: Date | string | null | undefined): string {
+export function formatRelative(
+  d: Date | string | null | undefined,
+  nowMs: number = Date.now()
+): string {
   if (!d) return "—";
   const date = typeof d === "string" ? new Date(d) : d;
-  const diff = Date.now() - date.getTime();
+  const diff = nowMs - date.getTime();
   const abs = Math.abs(diff);
   const minute = 60_000;
   const hour = 60 * minute;
@@ -64,9 +67,12 @@ export function formatRelative(d: Date | string | null | undefined): string {
   return formatDate(date);
 }
 
-export function formatRelativeFuture(d: Date | string): string {
+export function formatRelativeFuture(
+  d: Date | string,
+  nowMs: number = Date.now()
+): string {
   const date = typeof d === "string" ? new Date(d) : d;
-  const diff = date.getTime() - Date.now();
+  const diff = date.getTime() - nowMs;
   const abs = Math.abs(diff);
   const minute = 60_000;
   const hour = 60 * minute;
@@ -79,9 +85,12 @@ export function formatRelativeFuture(d: Date | string): string {
   return formatDate(date);
 }
 
-export function relTier(d: Date | string): "urgent" | "soon" | "future" | "past" {
+export function relTier(
+  d: Date | string,
+  nowMs: number = Date.now()
+): "urgent" | "soon" | "future" | "past" {
   const date = typeof d === "string" ? new Date(d) : d;
-  const diff = date.getTime() - Date.now();
+  const diff = date.getTime() - nowMs;
   if (diff < 0) return "past";
   if (diff < 1000 * 60 * 60 * 24) return "urgent";
   if (diff < 1000 * 60 * 60 * 24 * 3) return "soon";
@@ -89,59 +98,94 @@ export function relTier(d: Date | string): "urgent" | "soon" | "future" | "past"
 }
 
 export const FRAMEWORKS = [
-  { value: "react", label: "React", color: "#61dafb" },
-  { value: "angular", label: "Angular", color: "#dd0031" },
-  { value: "vue", label: "Vue.js", color: "#42b883" },
-  { value: "svelte", label: "Svelte", color: "#ff3e00" },
+  { value: "react", label: "React", color: "#3d7a99" },
+  { value: "angular", label: "Angular", color: "#9a1a35" },
+  { value: "vue", label: "Vue.js", color: "#2f7a58" },
+  { value: "svelte", label: "Svelte", color: "#b55232" },
   { value: "nextjs", label: "Next.js", color: "#1a1716" },
-  { value: "nuxt", label: "Nuxt", color: "#00dc82" },
-  { value: "typescript", label: "TypeScript", color: "#3178c6" },
-  { value: "javascript", label: "JavaScript", color: "#f7df1e" },
+  { value: "nuxt", label: "Nuxt", color: "#3b8764" },
+  { value: "typescript", label: "TypeScript", color: "#3b6e96" },
+  { value: "javascript", label: "JavaScript", color: "#b5862b" },
 ] as const;
 
 export const SKILL_CATEGORIES_CONFIG: Record<
   string,
   { label: string; color: string }
 > = {
-  frontend: { label: "Frontend", color: "#3b82f6" },
-  backend: { label: "Backend", color: "#10b981" },
-  cloud: { label: "Cloud & DevOps", color: "#f59e0b" },
-  mobile: { label: "Mobile", color: "#8b5cf6" },
-  data: { label: "Data & Storage", color: "#ec4899" },
-  other: { label: "Architecture & Other", color: "#64748b" },
+  frontend: { label: "Frontend", color: "#7a1229" },
+  backend: { label: "Backend", color: "#2f7a58" },
+  cloud: { label: "Cloud & DevOps", color: "#9c6b28" },
+  mobile: { label: "Mobile", color: "#456d87" },
+  data: { label: "Data & Storage", color: "#8e3f32" },
+  other: { label: "Architecture & Other", color: "#5e5753" },
 };
 
 export const DEFAULT_SKILL_COLORS: Record<string, string> = {
-  react: "#61dafb",
-  angular: "#dd0031",
-  vue: "#42b883",
-  svelte: "#ff3e00",
+  react: "#3d7a99",
+  angular: "#9a1a35",
+  vue: "#2f7a58",
+  svelte: "#b55232",
   nextjs: "#1a1716",
-  nuxt: "#00dc82",
-  typescript: "#3178c6",
-  javascript: "#f7df1e",
-  nodejs: "#5fa04e",
-  python: "#3776ab",
-  golang: "#00add8",
-  go: "#00add8",
-  rust: "#dea584",
-  java: "#b07219",
-  csharp: "#178600",
-  aws: "#ff9900",
-  gcp: "#4285f4",
-  azure: "#0078d4",
-  docker: "#2496ed",
-  kubernetes: "#326ce5",
-  terraform: "#844fba",
-  graphql: "#e10098",
-  postgresql: "#4169e1",
-  redis: "#dc382d",
-  mongodb: "#47a248",
-  tailwind: "#38bdf8",
-  flutter: "#02569b",
-  swift: "#f05138",
-  kotlin: "#7f52ff",
+  nuxt: "#3b8764",
+  typescript: "#3b6e96",
+  javascript: "#b5862b",
+  nodejs: "#3d7a55",
+  python: "#3b6e96",
+  golang: "#3a7d8c",
+  go: "#3a7d8c",
+  rust: "#8e4d32",
+  java: "#9c6b28",
+  csharp: "#2f7a58",
+  aws: "#b06e24",
+  gcp: "#456d87",
+  azure: "#3b6e96",
+  docker: "#456d87",
+  kubernetes: "#3b6e96",
+  terraform: "#5e5753",
+  graphql: "#9a1a35",
+  postgresql: "#456d87",
+  redis: "#a82843",
+  mongodb: "#2f7a58",
+  tailwind: "#3d7a99",
+  tailwindcss: "#3d7a99",
+  flutter: "#3b6e96",
+  swift: "#b55232",
+  kotlin: "#5e5753",
 };
+
+// Map saturated legacy hex values from seeded rows into Hireloop's warm, restrained palette.
+const LEGACY_COLOR_MAP: Record<string, string> = {
+  "#ec4899": "#7a1229",
+  "#db2777": "#8c2842",
+  "#8b5cf6": "#5e5753",
+  "#7c3aed": "#5e5753",
+  "#9333ea": "#7a1229",
+  "#7a4d9a": "#5e5753",
+  "#6366f1": "#456d87",
+  "#4f46e5": "#456d87",
+  "#3b82f6": "#456d87",
+  "#2563eb": "#456d87",
+  "#0ea5e9": "#3d7a99",
+  "#06b6d4": "#366c75",
+  "#14b8a6": "#2f7a58",
+  "#10b981": "#2f7a58",
+  "#059669": "#2f7a58",
+  "#22c55e": "#2f7a58",
+  "#f59e0b": "#9c6b28",
+  "#d97706": "#9c6b28",
+  "#f97316": "#8e4d32",
+  "#ef4444": "#a82843",
+  "#dc2626": "#a82843",
+  "#64748b": "#5e5753",
+};
+
+export function harmonizeColor(color?: string | null, seed = ""): string {
+  if (!color) return pickColor(seed || "hireloop");
+  const normalized = color.trim().toLowerCase();
+  if (LEGACY_COLOR_MAP[normalized]) return LEGACY_COLOR_MAP[normalized];
+  if (PALETTE.includes(normalized)) return normalized;
+  return seed ? pickColor(seed) : normalized;
+}
 
 export function getSkillColor(
   nameOrSlug: string,
@@ -149,7 +193,7 @@ export function getSkillColor(
 ): string {
   const key = nameOrSlug.toLowerCase().replace(/[^a-z0-9]/g, "");
   if (DEFAULT_SKILL_COLORS[key]) return DEFAULT_SKILL_COLORS[key];
-  if (fallbackCategoryColor) return fallbackCategoryColor;
+  if (fallbackCategoryColor) return harmonizeColor(fallbackCategoryColor);
   return pickColor(nameOrSlug);
 }
 
@@ -193,13 +237,13 @@ export const MILESTONE_LABEL: Record<string, string> = {
 };
 
 export const MILESTONE_COLOR: Record<string, string> = {
-  sourced: "#9a948f",
-  screening: "#5a8db0",
-  submitted: "#7a4d9a",
-  interviewing: "#c48a3a",
-  offer: "#479c73",
+  sourced: "#6b6562",
+  screening: "#456d87",
+  submitted: "#7a1229",
+  interviewing: "#9c6b28",
+  offer: "#3b8764",
   placed: "#2f7a58",
-  archived: "#6b6562",
+  archived: "#78716c",
 };
 
 export const MILESTONE_ORDER = [
@@ -229,11 +273,11 @@ export const INTERVIEW_OUTCOME_LABEL: Record<string, string> = {
 };
 
 export const INTERVIEW_OUTCOME_COLOR: Record<string, string> = {
-  scheduled: "#5a8db0",
+  scheduled: "#456d87",
   passed: "#2f7a58",
-  failed: "#b8334e",
+  failed: "#a82843",
   "no-show": "#7a1229",
-  rescheduled: "#c48a3a",
+  rescheduled: "#9c6b28",
 };
 
 export const AVAILABILITY_LABEL: Record<string, string> = {
@@ -244,10 +288,10 @@ export const AVAILABILITY_LABEL: Record<string, string> = {
 };
 
 export const AVAILABILITY_COLOR: Record<string, string> = {
-  available: "#479c73",
-  limited: "#c48a3a",
-  booked: "#5a8db0",
-  "on-leave": "#9a948f",
+  available: "#2f7a58",
+  limited: "#9c6b28",
+  booked: "#456d87",
+  "on-leave": "#6b6562",
 };
 
 export const REGION_LABEL: Record<string, string> = {
@@ -255,34 +299,43 @@ export const REGION_LABEL: Record<string, string> = {
   ca: "Canada",
   uk: "United Kingdom",
   eu: "Europe",
-  other: "Other",
+  other: "International",
 };
 
+export const REGION_CODE: Record<string, string> = {
+  us: "US",
+  ca: "CA",
+  uk: "UK",
+  eu: "EU",
+  other: "INTL",
+};
+
+// Kept as empty strings to avoid broken emoji flag glyphs in UI copy; use REGION_CODE or REGION_LABEL.
 export const REGION_FLAG: Record<string, string> = {
-  us: "🇺🇸",
-  ca: "🇨🇦",
-  uk: "🇬🇧",
-  eu: "🇪🇺",
-  other: "🌍",
+  us: "",
+  ca: "",
+  uk: "",
+  eu: "",
+  other: "",
 };
 
 export const SENIORITY_COLOR: Record<string, string> = {
-  junior: "#9a948f",
-  mid: "#5a8db0",
-  senior: "#479c73",
-  staff: "#c48a3a",
+  junior: "#6b6562",
+  mid: "#456d87",
+  senior: "#2f7a58",
+  staff: "#9c6b28",
   principal: "#7a1229",
 };
 
 export const PALETTE = [
   "#7a1229",
-  "#479c73",
-  "#c48a3a",
-  "#5a8db0",
-  "#7a4d9a",
-  "#b8334e",
   "#2f7a58",
-  "#9a1a35",
+  "#456d87",
+  "#9c6b28",
+  "#8e4d32",
+  "#366353",
+  "#524642",
+  "#8c2842",
 ];
 
 export function pickColor(seed: string): string {
