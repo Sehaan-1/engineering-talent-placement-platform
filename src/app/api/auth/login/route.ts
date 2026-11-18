@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyPassword, createSessionForUser } from "@/lib/auth";
+import { seedDatabase } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
 
@@ -53,11 +54,20 @@ export async function POST(req: Request) {
     return Response.json({ error: "Email and password are required." }, { status: 400 });
   }
 
-  const rows = await db
+  let rows = await db
     .select()
     .from(users)
     .where(eq(users.email, body.email.trim().toLowerCase()))
     .limit(1);
+
+  if (rows.length === 0) {
+    await seedDatabase().catch(() => {});
+    rows = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, body.email.trim().toLowerCase()))
+      .limit(1);
+  }
 
   if (rows.length === 0) {
     recordFailedAttempt(ip);
