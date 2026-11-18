@@ -29,7 +29,8 @@ if (databaseUrl) {
   pool = pgPool;
   db = drizzlePg(pgPool);
 } else {
-  const pidFile = path.resolve("./.pglite_data/postmaster.pid");
+  const dataDir = process.env.VERCEL ? "/tmp/.pglite_data" : "./.pglite_data";
+  const pidFile = path.resolve(path.join(dataDir, "postmaster.pid"));
   if (fs.existsSync(pidFile)) {
     try {
       fs.unlinkSync(pidFile);
@@ -37,7 +38,7 @@ if (databaseUrl) {
   }
   const pglite =
     globalForDb.__arenaPgliteClient ??
-    new PGlite("./.pglite_data");
+    new PGlite(dataDir);
   if (process.env.NODE_ENV !== "production") {
     globalForDb.__arenaPgliteClient = pglite;
   }
