@@ -654,6 +654,9 @@ export async function ensureSkillTables() {
       linkedin_url text,
       tags jsonb NOT NULL DEFAULT '[]'::jsonb,
       avatar_color text NOT NULL DEFAULT '#6366f1',
+      search_vector tsvector GENERATED ALWAYS AS (
+        to_tsvector('english', coalesce(full_name, '') || ' ' || coalesce(headline, '') || ' ' || coalesce(bio, ''))
+      ) STORED,
       created_at timestamp with time zone NOT NULL DEFAULT now(),
       updated_at timestamp with time zone NOT NULL DEFAULT now()
     );
@@ -729,6 +732,17 @@ export async function ensureSkillTables() {
         WHERE table_name='skill_matrices' AND column_name='skill_id'
       ) THEN
         ALTER TABLE skill_matrices ADD COLUMN skill_id integer REFERENCES skill_definitions(id) ON DELETE CASCADE;
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='candidates' AND column_name='search_vector'
+      ) THEN
+        ALTER TABLE candidates ADD COLUMN search_vector tsvector
+        GENERATED ALWAYS AS (
+          to_tsvector('english', coalesce(full_name, '') || ' ' || coalesce(headline, '') || ' ' || coalesce(bio, ''))
+        ) STORED;
+        CREATE INDEX IF NOT EXISTS candidates_search_idx ON candidates USING gin(search_vector);
       END IF;
     END $$;
   `);

@@ -152,11 +152,12 @@ export default function CandidateDashboardView({
     }
   }
 
+  const [nowMs] = useState(() => Date.now());
   const upcomingInterviews = interviews.filter(
-    (i) => new Date(i.scheduledAt).getTime() > Date.now()
+    (i) => new Date(i.scheduledAt).getTime() > nowMs
   );
   const pastInterviews = interviews.filter(
-    (i) => new Date(i.scheduledAt).getTime() <= Date.now()
+    (i) => new Date(i.scheduledAt).getTime() <= nowMs
   );
 
   return (
@@ -820,7 +821,7 @@ export default function CandidateDashboardView({
                               border: "1px solid var(--pebble-line)",
                             }}
                           >
-                            "{it.feedback}"
+                            &ldquo;{it.feedback}&rdquo;
                           </div>
                         ) : null}
                       </div>

@@ -8,7 +8,6 @@ import FrameworkChip from "@/components/FrameworkChip";
 import StatusBadge from "@/components/StatusBadge";
 import Modal from "@/components/Modal";
 import {
-  FRAMEWORKS,
   PROFICIENCY_LABEL,
   SENIORITY_LABEL,
   REGION_LABEL,
@@ -1178,7 +1177,7 @@ export default function CandidateDetailView({
               </div>
               <h3>No skills tracked</h3>
               <p>
-                Add their first framework to start matching candidates to
+                Add their first skill to start matching candidates to
                 roles.
               </p>
             </div>
@@ -1187,7 +1186,7 @@ export default function CandidateDetailView({
               <table>
                 <thead>
                   <tr>
-                    <th>Framework</th>
+                    <th>Skill</th>
                     <th>Proficiency</th>
                     <th>Years</th>
                     <th>Last used</th>
@@ -1817,11 +1816,7 @@ export default function CandidateDetailView({
                   ))}
                 </>
               ) : (
-                FRAMEWORKS.map((f) => (
-                  <option key={f.value} value={f.value}>
-                    {f.label}
-                  </option>
-                ))
+                <option value={0}>+ Add custom / unlisted skill</option>
               )}
             </select>
           </div>

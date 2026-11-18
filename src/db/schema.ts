@@ -8,10 +8,16 @@ import {
   jsonb,
   pgEnum,
   uniqueIndex,
+  index,
+  customType,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-// ---------- Enums ----------
+export const customTsvector = customType<{ data: string }>({
+  dataType() {
+    return "tsvector";
+  },
+});
 
 export const roleEnum = pgEnum("user_role", ["recruiter", "candidate", "admin"]);
 export const verificationEnum = pgEnum("verification_status", [
@@ -26,16 +32,6 @@ export const seniorityEnum = pgEnum("seniority", [
   "senior",
   "staff",
   "principal",
-]);
-export const frameworkEnum = pgEnum("framework", [
-  "react",
-  "angular",
-  "vue",
-  "svelte",
-  "nextjs",
-  "nuxt",
-  "typescript",
-  "javascript",
 ]);
 export const proficiencyEnum = pgEnum("proficiency", [
   "learning",
@@ -243,6 +239,7 @@ export const candidates = pgTable(
     linkedinUrl: text("linkedin_url"),
     tags: jsonb("tags").$type<string[]>().notNull().default([]),
     avatarColor: text("avatar_color").notNull().default("#6366f1"),
+    searchVector: customTsvector("search_vector"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -257,6 +254,7 @@ export const candidates = pgTable(
     magicLinkTokenIdx: uniqueIndex("candidates_magic_link_token_idx").on(
       t.magicLinkToken
     ),
+    searchIdx: index("candidates_search_idx").using("gin", t.searchVector),
   })
 );
 

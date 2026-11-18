@@ -104,10 +104,11 @@ export default function ShortlistView({
     }
   };
 
+  const [nowMs] = useState(() => Date.now());
   const daysLeft = Math.max(
     0,
     Math.ceil(
-      (new Date(data.shortlist.expiresAt).getTime() - Date.now()) /
+      (new Date(data.shortlist.expiresAt).getTime() - nowMs) /
         (1000 * 60 * 60 * 24)
     )
   );

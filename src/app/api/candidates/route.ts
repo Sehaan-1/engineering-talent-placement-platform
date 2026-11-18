@@ -61,10 +61,10 @@ export async function GET(req: Request) {
       : eq(candidates.ownerId, user.id),
   ];
 
-  // Text search
   if (q) {
     const term = `%${q}%`;
     const textFilter = or(
+      sql`${candidates.searchVector} @@ plainto_tsquery('english', ${q})`,
       ilike(candidates.fullName, term),
       ilike(candidates.headline, term),
       ilike(candidates.location, term),

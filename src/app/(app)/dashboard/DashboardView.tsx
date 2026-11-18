@@ -10,7 +10,6 @@ import {
   MILESTONE_COLOR,
   MILESTONE_ORDER,
   INTERVIEW_TYPE_LABEL,
-  FRAMEWORKS,
   formatRelative,
   relTier,
   REGION_FLAG,
@@ -348,17 +347,17 @@ export default function DashboardView({
               marginBottom: 14,
             }}
           >
-            {totalSkills} tracked skills across {skillMix.length > 0 ? skillMix.length : Object.keys(skillsByFramework).length} technologies
+            {totalSkills} tracked skills across {skillMix.length > 0 ? skillMix.length : categoryMix.length} technologies
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {(skillMix.length > 0
               ? skillMix
-              : FRAMEWORKS.map((f) => ({
-                  name: f.label,
-                  slug: f.value,
-                  categoryName: "Skill",
-                  categoryColor: f.color,
-                  count: skillsByFramework[f.value] ?? 0,
+              : categoryMix.map((c) => ({
+                  name: c.name,
+                  slug: c.slug,
+                  categoryName: "Category",
+                  categoryColor: c.color,
+                  count: c.count,
                 }))
             ).slice(0, 7).map((s) => {
               const count = s.count;

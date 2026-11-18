@@ -42,3 +42,9 @@ yarn-error.log*
 .vscode/
 *.swp
 *.swo
+
+# AI Agent Skills
+.agents/
+/.agents/
+skills-lock.json
+

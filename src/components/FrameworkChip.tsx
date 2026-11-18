@@ -1,6 +1,6 @@
 "use client";
 
-import { FRAMEWORKS, PROFICIENCY_LABEL, getSkillColor } from "@/lib/format";
+import { PROFICIENCY_LABEL, getSkillColor } from "@/lib/format";
 
 export type SkillChipProps = {
   framework?: string;
@@ -26,15 +26,10 @@ export default function FrameworkChip({
 }: SkillChipProps) {
   const skillName = skill?.name ?? name ?? framework ?? "Skill";
   const skillSlug = skill?.slug ?? framework ?? skillName.toLowerCase();
-  const legacyMeta = FRAMEWORKS.find(
-    (f) => f.value === framework || f.value === skillSlug
-  );
-
-  const label = legacyMeta?.label ?? skillName;
+  const label = skillName;
   const color =
     customColor ??
     skill?.color ??
-    legacyMeta?.color ??
     getSkillColor(skillSlug, skill?.categoryColor);
 
   const cls = proficiency ? `skill-tag ${proficiency}` : "chip";

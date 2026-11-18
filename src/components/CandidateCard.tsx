@@ -46,6 +46,7 @@ export type CandidateCardProps = {
     linkedinUrl?: string | null;
     avatarColor: string;
     skills?: CandidateCardSkill[];
+    availabilityStatus?: string;
   };
   placement?: {
     id: number;
@@ -159,6 +160,52 @@ export default function CandidateCard({
                   title="Vetted & Verified Talent"
                 >
                   <IconShield size={11} /> Verified
+                </span>
+              ) : null}
+              {candidate.availabilityStatus ? (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color:
+                      candidate.availabilityStatus === "available"
+                        ? "var(--jade-deep)"
+                        : candidate.availabilityStatus === "limited"
+                          ? "var(--amber)"
+                          : "var(--ink-muted)",
+                    background:
+                      candidate.availabilityStatus === "available"
+                        ? "var(--jade-soft)"
+                        : candidate.availabilityStatus === "limited"
+                          ? "var(--amber-soft)"
+                          : "var(--pebble-soft)",
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background:
+                        candidate.availabilityStatus === "available"
+                          ? "var(--jade)"
+                          : candidate.availabilityStatus === "limited"
+                            ? "var(--amber)"
+                            : "var(--ink-muted)",
+                    }}
+                  />
+                  {candidate.availabilityStatus === "available"
+                    ? "Available"
+                    : candidate.availabilityStatus === "limited"
+                      ? "Limited"
+                      : candidate.availabilityStatus === "booked"
+                        ? "Booked"
+                        : "On Leave"}
                 </span>
               ) : null}
             </div>

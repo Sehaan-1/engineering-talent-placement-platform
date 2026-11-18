@@ -67,6 +67,7 @@ export default async function CandidatesPage({
   if (q) {
     const term = `%${q}%`;
     const textFilter = or(
+      sql`${candidates.searchVector} @@ plainto_tsquery('english', ${q})`,
       ilike(candidates.fullName, term),
       ilike(candidates.headline, term),
       ilike(candidates.location, term),

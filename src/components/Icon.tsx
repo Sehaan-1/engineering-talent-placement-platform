@@ -8,9 +8,8 @@ type IconProps = {
   style?: React.CSSProperties;
 };
 
-const make =
-  (path: React.ReactNode, viewBox = "0 0 24 24") =>
-  ({ size = 18, strokeWidth = 1.75, className, style }: IconProps) => (
+const make = (path: React.ReactNode, viewBox = "0 0 24 24") => {
+  const IconComponent = ({ size = 18, strokeWidth = 1.75, className, style }: IconProps) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox={viewBox}
@@ -28,6 +27,9 @@ const make =
       {path}
     </svg>
   );
+  IconComponent.displayName = "Icon";
+  return IconComponent;
+};
 
 export const IconBuilding = make(
   <>

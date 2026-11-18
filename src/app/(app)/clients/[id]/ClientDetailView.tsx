@@ -159,6 +159,27 @@ export default function ClientDetailView({
     token: string;
   } | null>(null);
   const [isShortlistGenerating, setIsShortlistGenerating] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletingClient, setIsDeletingClient] = useState(false);
+
+  const handleDeleteClient = async () => {
+    setIsDeletingClient(true);
+    try {
+      const res = await fetch(`/api/clients/${client.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to delete client");
+      }
+      pushToast(`Client "${client.name}" deleted successfully`, "success");
+      router.replace("/clients");
+    } catch (err) {
+      pushToast(err instanceof Error ? err.message : "Delete failed", "error");
+    } finally {
+      setIsDeletingClient(false);
+    }
+  };
 
   const handleUpdateClient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -504,6 +525,13 @@ export default function ClientDetailView({
                 }}
               >
                 <IconLink size={14} /> Share Shortlist
+              </button>
+              <button
+                type="button"
+                className="btn danger sm"
+                onClick={() => setIsDeleteModalOpen(true)}
+              >
+                <IconTrash size={14} /> Delete
               </button>
             </div>
           </div>
@@ -1307,6 +1335,35 @@ export default function ClientDetailView({
             </>
           )}
         </div>
+      </Modal>
+
+      <Modal
+        open={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title={`Delete ${client.name}?`}
+        footer={
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+            <button
+              type="button"
+              className="btn ghost sm"
+              onClick={() => setIsDeleteModalOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn danger sm"
+              onClick={handleDeleteClient}
+              disabled={isDeletingClient}
+            >
+              {isDeletingClient ? "Deleting..." : "Confirm Delete"}
+            </button>
+          </div>
+        }
+      >
+        <p style={{ margin: 0, fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.5 }}>
+          Are you sure you want to delete <strong>{client.name}</strong>? This will remove all associated contacts and shortlist records, and detach any linked placements.
+        </p>
       </Modal>
     </div>
   );

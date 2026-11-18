@@ -84,9 +84,11 @@ export default function PlacementsView({
   });
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const [prevInitial, setPrevInitial] = useState(initial);
+  if (prevInitial !== initial) {
+    setPrevInitial(initial);
     setPlacements(initial);
-  }, [initial]);
+  }
 
   useEffect(() => {
     if (!createOpen) return;

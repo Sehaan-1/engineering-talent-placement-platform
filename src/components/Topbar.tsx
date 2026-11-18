@@ -91,9 +91,13 @@ export default function Topbar({ orgName }: { orgName?: string } = {}) {
       : matchedMeta.crumb,
   };
 
-  useEffect(() => {
-    if (!pathname?.startsWith("/candidates")) setQ("");
-  }, [pathname]);
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    if (!pathname?.startsWith("/candidates")) {
+      setQ("");
+    }
+  }
 
   // Initial notification count & SSE listener
   useEffect(() => {

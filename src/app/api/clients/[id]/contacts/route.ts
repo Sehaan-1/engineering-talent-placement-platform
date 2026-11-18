@@ -2,16 +2,21 @@ import { db } from "@/db";
 import { clients, clientContacts } from "@/db/schema";
 import { ensurePhase2Tables } from "@/lib/seed";
 import { requireAuthJson, getJsonBody, jsonError } from "@/lib/types";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
+import { getOrgContext } from "@/lib/org";
 import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-async function getOwnedClient(id: number, userId: number) {
+async function getAccessibleClient(id: number, userId: number, orgId?: number) {
+  const condition = orgId
+    ? or(eq(clients.orgId, orgId), eq(clients.ownerId, userId))
+    : eq(clients.ownerId, userId);
+
   const rows = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.id, id), eq(clients.ownerId, userId)))
+    .where(and(eq(clients.id, id), condition!))
     .limit(1);
   return rows[0] ?? null;
 }
@@ -24,12 +29,13 @@ export async function GET(
   if (error) return error;
 
   await ensurePhase2Tables();
+  const orgCtx = await getOrgContext().catch(() => null);
 
   const { id } = await params;
   const clientId = Number(id);
   if (!Number.isFinite(clientId)) return jsonError("Invalid client ID");
 
-  const client = await getOwnedClient(clientId, user.id);
+  const client = await getAccessibleClient(clientId, user.id, orgCtx?.org.id);
   if (!client) return jsonError("Client not found", 404);
 
   const contacts = await db
@@ -49,12 +55,13 @@ export async function POST(
   if (error) return error;
 
   await ensurePhase2Tables();
+  const orgCtx = await getOrgContext().catch(() => null);
 
   const { id } = await params;
   const clientId = Number(id);
   if (!Number.isFinite(clientId)) return jsonError("Invalid client ID");
 
-  const client = await getOwnedClient(clientId, user.id);
+  const client = await getAccessibleClient(clientId, user.id, orgCtx?.org.id);
   if (!client) return jsonError("Client not found", 404);
 
   const body = await getJsonBody<{

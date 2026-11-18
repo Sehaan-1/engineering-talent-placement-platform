@@ -61,7 +61,7 @@ export default function InterviewsView({
     candidateId: 0,
     placementId: null as number | null,
     type: "technical",
-    scheduledAt: new Date(Date.now() + 1000 * 60 * 60 * 24)
+    scheduledAt: new Date(new Date(now).getTime() + 1000 * 60 * 60 * 24)
       .toISOString()
       .slice(0, 16),
     durationMinutes: 60,
@@ -142,7 +142,7 @@ export default function InterviewsView({
         candidateId: 0,
         placementId: null,
         type: "technical",
-        scheduledAt: new Date(Date.now() + 1000 * 60 * 60 * 24)
+        scheduledAt: new Date(new Date(now).getTime() + 1000 * 60 * 60 * 24)
           .toISOString()
           .slice(0, 16),
         durationMinutes: 60,

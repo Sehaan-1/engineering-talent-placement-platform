@@ -88,16 +88,6 @@ export function relTier(d: Date | string): "urgent" | "soon" | "future" | "past"
   return "future";
 }
 
-export const FRAMEWORKS = [
-  { value: "react", label: "React", color: "#61dafb" },
-  { value: "angular", label: "Angular", color: "#dd0031" },
-  { value: "vue", label: "Vue.js", color: "#42b883" },
-  { value: "svelte", label: "Svelte", color: "#ff3e00" },
-  { value: "nextjs", label: "Next.js", color: "#1a1716" },
-  { value: "nuxt", label: "Nuxt", color: "#00dc82" },
-  { value: "typescript", label: "TypeScript", color: "#3178c6" },
-  { value: "javascript", label: "JavaScript", color: "#f7df1e" },
-] as const;
 
 export const SKILL_CATEGORIES_CONFIG: Record<
   string,

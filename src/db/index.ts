@@ -3,6 +3,9 @@ import { drizzle as drizzlePgLite } from "drizzle-orm/pglite";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+import fs from "fs";
+import path from "path";
+
 const databaseUrl = process.env.DATABASE_URL;
 
 const globalForDb = globalThis as typeof globalThis & {
@@ -26,6 +29,12 @@ if (databaseUrl) {
   pool = pgPool;
   db = drizzlePg(pgPool);
 } else {
+  const pidFile = path.resolve("./.pglite_data/postmaster.pid");
+  if (fs.existsSync(pidFile)) {
+    try {
+      fs.unlinkSync(pidFile);
+    } catch {}
+  }
   const pglite =
     globalForDb.__arenaPgliteClient ??
     new PGlite("./.pglite_data");

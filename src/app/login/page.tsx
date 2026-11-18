@@ -2,7 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import LoginForm from "./LoginForm";
 import { seedDatabase } from "@/lib/seed";
-import ThreeHero from "@/components/ThreeHero";
+import HireloopStageshowHero from "@/components/HireloopStageshowHero";
 import {
   IconUsers,
   IconGlobe,
@@ -23,9 +23,7 @@ export default async function LoginPage() {
   return (
     <div className="login-shell">
       <aside className="login-art">
-        <ThreeHero />
-
-        <div className="layer" style={{ display: "flex", flexDirection: "column", gap: 64, height: "100%" }}>
+        <div className="layer" style={{ display: "flex", flexDirection: "column", gap: 32, height: "100%", justifyContent: "space-between" }}>
           <div className="brand">
             <div className="logo">
               <svg
@@ -49,12 +47,14 @@ export default async function LoginPage() {
           </div>
 
           <div>
-            <h1>Place vetted frontend talent without the noise.</h1>
-            <p className="lead">
-              Curated profiles, framework skill matrices, timezone overlap
+            <h1>Place vetted engineering talent without the noise.</h1>
+            <p className="lead" style={{ marginBottom: 16 }}>
+              Curated profiles, verified skill matrices, timezone overlap
               matching, and a coaching pipeline for every interview stage —
               built for boutique recruiting teams.
             </p>
+
+            <HireloopStageshowHero />
 
             <div className="feature-grid">
               <div className="item">
@@ -63,7 +63,7 @@ export default async function LoginPage() {
                 </div>
                 <h4>Skill matrix</h4>
                 <p>
-                  Track React, Angular, Vue and 6 more frameworks per candidate.
+                  Multi-category skills &amp; proficiencies across engineering domains.
                 </p>
               </div>
               <div className="item">

@@ -196,7 +196,7 @@ export default function LoginForm() {
               }}
             />
             <p style={{ fontSize: 11, color: "var(--ink-muted)", marginTop: 4 }}>
-              Enter the email attached to your candidate profile. We'll send you an instant login link.
+              Enter the email attached to your candidate profile. We&apos;ll send you an instant login link.
             </p>
           </div>
 

@@ -3,6 +3,8 @@ import { redirect, notFound } from "next/navigation";
 import { db } from "@/db";
 import {
   candidates,
+  skillCategories,
+  skillDefinitions,
   skillMatrices,
   availabilities,
   placements,
@@ -37,8 +39,23 @@ export default async function CandidateDetailPage({
   const [skills, availability, candidatePlacements, interviewRows] =
     await Promise.all([
       db
-        .select()
+        .select({
+          id: skillMatrices.id,
+          candidateId: skillMatrices.candidateId,
+          skillId: skillMatrices.skillId,
+          proficiency: skillMatrices.proficiency,
+          yearsUsed: skillMatrices.yearsUsed,
+          lastUsedAt: skillMatrices.lastUsedAt,
+          notes: skillMatrices.notes,
+          name: skillDefinitions.name,
+          slug: skillDefinitions.slug,
+          categoryName: skillCategories.name,
+          categorySlug: skillCategories.slug,
+          categoryColor: skillCategories.color,
+        })
         .from(skillMatrices)
+        .innerJoin(skillDefinitions, eq(skillDefinitions.id, skillMatrices.skillId))
+        .innerJoin(skillCategories, eq(skillCategories.id, skillDefinitions.categoryId))
         .where(eq(skillMatrices.candidateId, candidateId))
         .orderBy(desc(skillMatrices.lastUsedAt)),
       db

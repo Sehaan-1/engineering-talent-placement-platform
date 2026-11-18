@@ -7,10 +7,12 @@ import {
   skillMatrices,
   skillDefinitions,
   skillCategories,
+  availabilities,
 } from "@/db/schema";
 import { ensurePhase2Tables } from "@/lib/seed";
 import { getJsonBody, jsonError } from "@/lib/types";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, desc } from "drizzle-orm";
+import { createNotification } from "@/lib/notify";
 import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -60,17 +62,24 @@ export async function GET(
     );
   }
 
-  // Fetch candidate skills
-  const skillsData = await db
-    .select({
-      matrix: skillMatrices,
-      definition: skillDefinitions,
-      category: skillCategories,
-    })
-    .from(skillMatrices)
-    .innerJoin(skillDefinitions, eq(skillDefinitions.id, skillMatrices.skillId))
-    .innerJoin(skillCategories, eq(skillCategories.id, skillDefinitions.categoryId))
-    .where(eq(skillMatrices.candidateId, data.candidate.id));
+  const [skillsData, availRows] = await Promise.all([
+    db
+      .select({
+        matrix: skillMatrices,
+        definition: skillDefinitions,
+        category: skillCategories,
+      })
+      .from(skillMatrices)
+      .innerJoin(skillDefinitions, eq(skillDefinitions.id, skillMatrices.skillId))
+      .innerJoin(skillCategories, eq(skillCategories.id, skillDefinitions.categoryId))
+      .where(eq(skillMatrices.candidateId, data.candidate.id)),
+    db
+      .select({ status: availabilities.status })
+      .from(availabilities)
+      .where(eq(availabilities.candidateId, data.candidate.id))
+      .orderBy(desc(availabilities.weekStart))
+      .limit(1),
+  ]);
 
   return Response.json({
     shortlist: {
@@ -111,6 +120,7 @@ export async function GET(
       linkedinUrl: data.candidate.linkedinUrl,
       tags: data.candidate.tags,
       avatarColor: data.candidate.avatarColor,
+      availabilityStatus: availRows[0]?.status ?? "available",
       skills: skillsData.map((s) => ({
         id: s.definition.id,
         name: s.definition.name,
@@ -137,9 +147,13 @@ export async function POST(
     .select({
       shortlist: shortlists,
       placement: placements,
+      candidate: candidates,
+      client: clients,
     })
     .from(shortlists)
     .innerJoin(placements, eq(placements.id, shortlists.placementId))
+    .innerJoin(candidates, eq(candidates.id, placements.candidateId))
+    .innerJoin(clients, eq(clients.id, shortlists.clientId))
     .where(and(eq(shortlists.accessToken, token), gt(shortlists.expiresAt, new Date())))
     .limit(1);
 
@@ -147,7 +161,7 @@ export async function POST(
     return jsonError("Shortlist not found or expired", 404);
   }
 
-  const { placement } = rows[0];
+  const { placement, candidate, client } = rows[0];
   const body = await getJsonBody<{
     action?: "approve" | "reject" | "request_interview";
     feedback?: string;
@@ -186,6 +200,14 @@ export async function POST(
     })
     .where(eq(placements.id, placement.id))
     .returning();
+
+  await createNotification(
+    candidate.ownerId,
+    "status_changed",
+    `Shortlist: ${body.action === "approve" ? "Candidate Approved" : body.action === "request_interview" ? "Interview Requested" : "Candidate Declined"}`,
+    `${client.name} responded to shortlist for ${candidate.fullName} (${placement.roleTitle})`,
+    `/placements`
+  );
 
   return Response.json({
     ok: true,

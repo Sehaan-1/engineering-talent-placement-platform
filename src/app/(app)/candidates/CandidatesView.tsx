@@ -188,16 +188,22 @@ export default function CandidatesView({
     verification: filters.verification || "",
   });
 
-  useEffect(() => {
+  const [prevInitial, setPrevInitial] = useState(initial);
+  if (prevInitial !== initial) {
+    setPrevInitial(initial);
     setCandidates(initial);
-  }, [initial]);
+  }
 
-  useEffect(() => {
+  const [prevOpenNew, setPrevOpenNew] = useState(openNew);
+  if (prevOpenNew !== openNew) {
+    setPrevOpenNew(openNew);
     if (openNew) setShowForm(true);
-  }, [openNew]);
+  }
 
   // Sync state if URL changes externally
-  useEffect(() => {
+  const [prevFilters, setPrevFilters] = useState(filters);
+  if (prevFilters !== filters) {
+    setPrevFilters(filters);
     setFilterValues({
       q: filters.q || "",
       skills: (filters.skills || filters.framework)
@@ -210,7 +216,7 @@ export default function CandidatesView({
       availability: filters.availability || "",
       verification: filters.verification || "",
     });
-  }, [filters]);
+  }
 
   // Debounced URL updates when filterValues change
   useEffect(() => {

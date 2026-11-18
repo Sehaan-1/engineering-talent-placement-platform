@@ -7,6 +7,7 @@ Hireloop is a full-stack talent placement and candidate relationship platform bu
 ## Table of Contents
 
 - [Overview](#overview)
+- [Screenshots & Product Walkthrough](#screenshots--product-walkthrough)
 - [Key Features](#key-features)
 - [System Architecture](#system-architecture)
   - [High-Level Data Flow](#high-level-data-flow)
@@ -40,6 +41,25 @@ Hireloop automates the talent pipeline lifecycle across three distinct stakehold
 1. **Recruiter & Agency Workspace**: Multi-tenant team hub for sourcing, filtering candidates by granular framework proficiencies, tracking active client placements, scheduling interviews, reviewing audit logs, and managing team permissions.
 2. **Candidate Portal**: Passwordless self-service portal where engineers manage their availability schedule, update hourly rates, upload resumes for automated skill parsing, and track scheduled interviews.
 3. **Client Review Shortlist**: External, token-authenticated public review links where hiring managers evaluate curated candidate profiles, submit feedback, request interviews, or make hiring decisions without requiring an account.
+
+---
+
+## Screenshots & Product Walkthrough
+
+### Interactive Product Hero (Landing & Login)
+*Interactive product UI illustration with native macOS chrome, real-time typing, AI candidate match scoring, and satellite shortlist confirmation.*
+
+![Hireloop Interactive Hero](docs/screenshots/hero_stageshow.png)
+
+### Recruiter & Agency Workspace Dashboard
+*Pipeline metrics, placement value tracking, upcoming candidate interviews, and live activity feeds.*
+
+![Recruiter Dashboard](docs/screenshots/dashboard.png)
+
+### Candidate Directory & Granular Skill Matrix
+*Multi-category skills, verification badges, timezone overlap windows (US / CA / UK), and candidate profile management.*
+
+![Candidate Directory & Skill Matrix](docs/screenshots/candidates.png)
 
 ---
 

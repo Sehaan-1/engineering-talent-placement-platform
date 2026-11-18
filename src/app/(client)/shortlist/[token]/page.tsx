@@ -7,9 +7,10 @@ import {
   skillMatrices,
   skillDefinitions,
   skillCategories,
+  availabilities,
 } from "@/db/schema";
 import { ensurePhase2Tables } from "@/lib/seed";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import ShortlistView from "./ShortlistView";
 import Link from "next/link";
@@ -132,6 +133,13 @@ export default async function ShortlistPage({
     .innerJoin(skillCategories, eq(skillCategories.id, skillDefinitions.categoryId))
     .where(eq(skillMatrices.candidateId, data.candidate.id));
 
+  const availRows = await db
+    .select({ status: availabilities.status })
+    .from(availabilities)
+    .where(eq(availabilities.candidateId, data.candidate.id))
+    .orderBy(desc(availabilities.weekStart))
+    .limit(1);
+
   const initialData = {
     shortlist: {
       id: data.shortlist.id,
@@ -171,6 +179,7 @@ export default async function ShortlistPage({
       linkedinUrl: data.candidate.linkedinUrl,
       tags: data.candidate.tags,
       avatarColor: data.candidate.avatarColor,
+      availabilityStatus: availRows[0]?.status ?? "available",
       skills: skillsData.map((s) => ({
         id: s.definition.id,
         name: s.definition.name,
